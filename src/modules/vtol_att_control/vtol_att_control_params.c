@@ -40,17 +40,6 @@
  */
 
 /**
- * VTOL number of engines
- *
- * @min 0
- * @max 8
- * @increment 1
- * @decimal 0
- * @group VTOL Attitude Control
- */
-PARAM_DEFINE_INT32(VT_MOT_COUNT, 0);
-
-/**
  * Idle speed of VTOL when in multicopter mode
  *
  * @unit us
@@ -82,6 +71,7 @@ PARAM_DEFINE_INT32(VT_FW_PERM_STAB, 0);
  * @min 0
  * @max 2
  * @decimal 0
+ * @reboot_required true
  * @group VTOL Attitude Control
  */
 PARAM_DEFINE_INT32(VT_TYPE, 0);
@@ -159,11 +149,12 @@ PARAM_DEFINE_FLOAT(VT_B_TRANS_THR, 0.0f);
  *
  * The approximate deceleration during a back transition in m/s/s
  * Used to calculate back transition distance in mission mode. A lower value will make the VTOL transition further from the destination waypoint.
+ * For standard vtol and tiltrotors a controller is used to track this value during the transition.
  *
  * @unit m/s/s
- * @min 0.00
- * @max 20.00
- * @increment 1
+ * @min 0.5
+ * @max 10
+ * @increment 0.1
  * @decimal 2
  * @group VTOL Attitude Control
  */
@@ -237,8 +228,8 @@ PARAM_DEFINE_FLOAT(VT_FW_MIN_ALT, 0.0f);
 /**
  * Adaptive QuadChute
  *
- * Maximum negative altitude error, when in fixed wing the altitude drops below this copared to the altitude setpoint
- * the vehicle will transition back to MC mode and enter failsafe RTL
+ * Maximum negative altitude error for fixed wing flight. If the altitude drops below this value below the altitude setpoint
+ * the vehicle will transition back to MC mode and enter failsafe RTL.
  * @min 0.0
  * @max 200.0
  * @group VTOL Attitude Control
@@ -280,39 +271,74 @@ PARAM_DEFINE_INT32(VT_FW_QC_R, 0);
 PARAM_DEFINE_FLOAT(VT_F_TR_OL_TM, 6.0f);
 
 /**
- * Weather-vane yaw rate scale.
+ * The channel number of motors that must be turned off in fixed wing mode.
  *
- * The desired yawrate from the controller will be scaled in order to avoid
- * yaw fighting against the wind.
+ * @min 0
+ * @max 12345678
+ * @increment 1
+ * @decimal 0
+ * @group VTOL Attitude Control
+ */
+PARAM_DEFINE_INT32(VT_FW_MOT_OFFID, 0);
+
+/**
+ * The channel number of motors which provide lift during hover.
+ *
+ * @min 0
+ * @max 12345678
+ * @increment 1
+ * @decimal 0
+ * @group VTOL Attitude Control
+ */
+PARAM_DEFINE_INT32(VT_MOT_ID, 0);
+
+/**
+ * Differential thrust in forwards flight.
+ *
+ * Set to 1 to enable differential thrust in fixed-wing flight.
+ *
+ * @min 0
+ * @max 1
+ * @decimal 0
+ * @group VTOL Attitude Control
+ */
+PARAM_DEFINE_INT32(VT_FW_DIFTHR_EN, 0);
+
+/**
+ * Differential thrust scaling factor
+ *
+ * This factor specifies how the yaw input gets mapped to differential thrust in forwards flight.
  *
  * @min 0.0
  * @max 1.0
- * @increment 0.01
- * @decimal 3
+ * @decimal 2
+ * @increment 0.1
  * @group VTOL Attitude Control
  */
-PARAM_DEFINE_FLOAT(VT_WV_YAWR_SCL, 0.15f);
+PARAM_DEFINE_FLOAT(VT_FW_DIFTHR_SC, 0.1f);
 
 /**
- * Enable weather-vane mode takeoff for missions
+ * Backtransition deceleration setpoint to pitch feedforward gain.
  *
- * @boolean
- * @group Mission
+ *
+ * @unit rad*s*s/m
+ * @min 0
+ * @max 0.2
+ * @decimal 1
+ * @increment 0.05
+ * @group VTOL Attitude Control
  */
-PARAM_DEFINE_INT32(VT_WV_TKO_EN, 0);
+PARAM_DEFINE_FLOAT(VT_B_DEC_FF, 0.12f);
 
 /**
- * Weather-vane mode for loiter
+ * Backtransition deceleration setpoint to pitch I gain.
  *
- * @boolean
- * @group Mission
- */
-PARAM_DEFINE_INT32(VT_WV_LTR_EN, 0);
-
-/**
- * Weather-vane mode landings for missions
  *
- * @boolean
- * @group Mission
+ * @unit rad*s/m
+ * @min 0
+ * @max 0.3
+ * @decimal 1
+ * @increment 0.05
+ * @group VTOL Attitude Control
  */
-PARAM_DEFINE_INT32(VT_WV_LND_EN, 0);
+PARAM_DEFINE_FLOAT(VT_B_DEC_I, 0.1f);

@@ -39,19 +39,14 @@
 
 #pragma once
 
-#include <platforms/px4_defines.h>
+#include "Limits.hpp"
+
+#include <matrix/matrix/math.hpp>
 
 namespace math
 {
 
-// Type-safe signum function
-template<typename T>
-int sign(T val)
-{
-	return (T(0) < val) - (val < T(0));
-}
-
-// Type-safe signum function with zero treted as positive
+// Type-safe signum function with zero treated as positive
 template<typename T>
 int signNoZero(T val)
 {
@@ -114,7 +109,7 @@ const T deadzone(const T &value, const T &dz)
 	T x = constrain(value, (T) - 1, (T) 1);
 	T dzc = constrain(dz, (T) 0, (T) 0.99);
 	// Rescale the input such that we get a piecewise linear function that will be continuous with applied deadzone
-	T out = (x - sign(x) * dzc) / (1 - dzc);
+	T out = (x - matrix::sign(x) * dzc) / (1 - dzc);
 	// apply the deadzone (values zero around the middle)
 	return out * (fabsf(x) > dzc);
 }
@@ -146,8 +141,8 @@ const T gradual(const T &value, const T &x_low, const T &x_high, const T &y_low,
 
 	} else {
 		/* linear function between the two points */
-		float a = (y_high - y_low) / (x_high - x_low);
-		float b = y_low - a * x_low;
+		T a = (y_high - y_low) / (x_high - x_low);
+		T b = y_low - a * x_low;
 		return  a * value + b;
 	}
 }

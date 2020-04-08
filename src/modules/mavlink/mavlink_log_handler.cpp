@@ -39,7 +39,7 @@
 #include <sys/stat.h>
 #include <time.h>
 
-#define MOUNTPOINT PX4_ROOTFSDIR "/fs/microsd"
+#define MOUNTPOINT PX4_STORAGEDIR
 
 static const char *kLogRoot    = MOUNTPOINT "/log";
 static const char *kLogData    = MOUNTPOINT "/logdata.txt";
@@ -169,6 +169,11 @@ MavlinkLogHandler::_log_request_list(const mavlink_message_t *msg)
 	if (!_pLogHandlerHelper) {
 		//-- Prepare new request
 		_pLogHandlerHelper = new LogListHelper;
+	}
+
+	if (!_pLogHandlerHelper) {
+		PX4_ERR("LogListHelper alloc failed");
+		return;
 	}
 
 	if (_pLogHandlerHelper->log_count) {
@@ -349,6 +354,10 @@ LogListHelper::LogListHelper()
 //-------------------------------------------------------------------
 LogListHelper::~LogListHelper()
 {
+	if (current_log_filep) {
+		::fclose(current_log_filep);
+	}
+
 	// Remove log data files (if any)
 	unlink(kLogData);
 	unlink(kTmpData);
@@ -477,7 +486,7 @@ LogListHelper::_init()
 			time_t tt = 0;
 			char log_path[128];
 			int ret = snprintf(log_path, sizeof(log_path), "%s/%s", kLogRoot, result->d_name);
-			bool path_is_ok = (ret > 0) && (ret < sizeof(log_path));
+			bool path_is_ok = (ret > 0) && (ret < (int)sizeof(log_path));
 
 			if (path_is_ok) {
 				if (_get_session_date(log_path, result->d_name, tt)) {
@@ -539,7 +548,7 @@ LogListHelper::_scan_logs(FILE *f, const char *dir, time_t &date)
 				uint32_t size = 0;
 				char log_file_path[128];
 				int ret = snprintf(log_file_path, sizeof(log_file_path), "%s/%s", dir, result->d_name);
-				bool path_is_ok = (ret > 0) && (ret < sizeof(log_file_path));
+				bool path_is_ok = (ret > 0) && (ret < (int)sizeof(log_file_path));
 
 				if (path_is_ok) {
 					if (_get_log_time_size(log_file_path, result->d_name, ldate, size)) {
@@ -609,7 +618,7 @@ LogListHelper::delete_all(const char *dir)
 		if (result->d_type == PX4LOG_DIRECTORY && result->d_name[0] != '.') {
 			char log_path[128];
 			int ret = snprintf(log_path, sizeof(log_path), "%s/%s", dir, result->d_name);
-			bool path_is_ok = (ret > 0) && (ret < sizeof(log_path));
+			bool path_is_ok = (ret > 0) && (ret < (int)sizeof(log_path));
 
 			if (path_is_ok) {
 				LogListHelper::delete_all(log_path);
@@ -623,7 +632,7 @@ LogListHelper::delete_all(const char *dir)
 		if (result->d_type == PX4LOG_REGULAR_FILE) {
 			char log_path[128];
 			int ret = snprintf(log_path, sizeof(log_path), "%s/%s", dir, result->d_name);
-			bool path_is_ok = (ret > 0) && (ret < sizeof(log_path));
+			bool path_is_ok = (ret > 0) && (ret < (int)sizeof(log_path));
 
 			if (path_is_ok) {
 				if (unlink(log_path)) {

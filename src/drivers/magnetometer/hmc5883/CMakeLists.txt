@@ -33,13 +33,15 @@
 px4_add_module(
 	MODULE drivers__hmc5883
 	MAIN hmc5883
-	STACK_MAIN 1200
 	COMPILE_FLAGS
 	SRCS
+		HMC5883.cpp
+		HMC5883.hpp
 		hmc5883_i2c.cpp
 		hmc5883_spi.cpp
-		hmc5883.cpp
+		hmc5883_main.cpp
 	DEPENDS
-		platforms__common
+		drivers_magnetometer
+		px4_work_queue
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :
+

@@ -67,23 +67,6 @@ int orb_unadvertise(orb_advert_t handle)
 	return uORB::Manager::get_instance()->orb_unadvertise(handle);
 }
 
-int orb_publish_auto(const struct orb_metadata *meta, orb_advert_t *handle, const void *data, int *instance,
-		     int priority)
-{
-	if (*handle == nullptr) {
-		*handle = orb_advertise_multi(meta, data, instance, priority);
-
-		if (*handle != nullptr) {
-			return 0;
-		}
-
-	} else {
-		return orb_publish(meta, *handle, data);
-	}
-
-	return -1;
-}
-
 int  orb_publish(const struct orb_metadata *meta, orb_advert_t handle, const void *data)
 {
 	return uORB::Manager::get_instance()->orb_publish(meta, handle, data);
@@ -112,11 +95,6 @@ int  orb_copy(const struct orb_metadata *meta, int handle, void *buffer)
 int  orb_check(int handle, bool *updated)
 {
 	return uORB::Manager::get_instance()->orb_check(handle, updated);
-}
-
-int  orb_stat(int handle, uint64_t *time)
-{
-	return uORB::Manager::get_instance()->orb_stat(handle, time);
 }
 
 int  orb_exists(const struct orb_metadata *meta, int instance)

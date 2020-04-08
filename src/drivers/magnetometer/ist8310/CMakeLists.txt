@@ -33,11 +33,9 @@
 px4_add_module(
 	MODULE drivers__ist8310
 	MAIN ist8310
-	STACK_MAIN 1200
-	COMPILE_FLAGS
 	SRCS
 		ist8310.cpp
 	DEPENDS
-		platforms__common
+		drivers_magnetometer
+		px4_work_queue
 	)
-# vim: set noet ft=cmake fenc=utf-8 ff=unix :
