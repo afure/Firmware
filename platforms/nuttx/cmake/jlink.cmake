@@ -81,3 +81,61 @@ if(Ozone_PATH)
 		USES_TERMINAL
 	)
 endif()
+
+if(bootloader_bin OR (EXISTS "${PX4_BOARD_DIR}/bootloader/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_bootloader.bin"))
+
+	if(bootloader_bin)
+		set(BOARD_BL_FIRMWARE_BIN ${bootloader_bin})
+	else()
+		set(BOARD_BL_FIRMWARE_BIN ${PX4_BOARD_DIR}/bootloader/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_bootloader.bin)
+	endif()
+
+	# jlink_upload_bootloader
+	if(JLinkGDBServerCLExe_PATH)
+		add_custom_target(jlink_upload_bootloader
+			COMMAND ${PX4_BINARY_DIR}/jlink_gdb_start.sh
+			COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh ${PX4_BINARY_DIR}/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_bootloader.elf
+			DEPENDS
+				${PX4_BINARY_DIR}/${PX4_BOARD_VENDOR}_${PX4_BOARD_MODEL}_bootloader.elf
+				${PX4_BINARY_DIR}/jlink_gdb_start.sh
+				${CMAKE_CURRENT_SOURCE_DIR}/Debug/upload_jlink_gdb.sh
+			WORKING_DIRECTORY ${PX4_BINARY_DIR}
+			USES_TERMINAL
+		)
+	endif()
+
+	# jlink_flash_bootloader_bin
+	find_program(JLinkExe_PATH JLinkExe)
+	if(JLinkExe_PATH)
+		file(RELATIVE_PATH BOARD_BL_FIRMWARE_BIN ${PX4_BINARY_DIR} ${BOARD_BL_FIRMWARE_BIN})
+
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Debug/flash_bootloader.jlink.in ${PX4_BINARY_DIR}/flash_bootloader.jlink @ONLY)
+		add_custom_target(jlink_flash_bootloader_bin
+			COMMAND ${JLinkExe_PATH} -CommandFile ${PX4_BINARY_DIR}/flash_bootloader.jlink
+			DEPENDS
+				px4
+				${CMAKE_CURRENT_SOURCE_DIR}/Debug/flash_bootloader.jlink.in
+			WORKING_DIRECTORY ${PX4_BINARY_DIR}
+			USES_TERMINAL
+		)
+	endif()
+endif()
+
+if(uavcan_bl_image_name)
+	# jlink_flash_bootloader
+	find_program(JLinkExe_PATH JLinkExe)
+	if(JLinkExe_PATH)
+		set(BOARD_FIRMWARE_BIN ${PX4_BINARY_DIR}/${uavcan_bl_image_name})
+		set(BOARD_FIRMWARE_APP_OFFSET "0x08010000")
+
+		configure_file(${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in ${PX4_BINARY_DIR}/flash_bin.jlink @ONLY)
+		add_custom_target(jlink_flash_uavcan_bin
+			COMMAND ${JLinkExe_PATH} -CommandFile ${PX4_BINARY_DIR}/flash_bin.jlink
+			DEPENDS
+				${PX4_SOURCE_DIR}/platforms/nuttx/Debug/flash_bin.jlink.in
+				${PX4_BINARY_DIR}/${uavcan_bl_image_name}
+			WORKING_DIRECTORY ${PX4_BINARY_DIR}
+			USES_TERMINAL
+		)
+	endif()
+endif()

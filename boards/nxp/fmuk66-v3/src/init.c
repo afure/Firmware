@@ -53,6 +53,7 @@
 #include <string.h>
 #include <debug.h>
 #include <errno.h>
+#include <syslog.h>
 
 #include <nuttx/board.h>
 #include <nuttx/spi/spi.h>
@@ -64,9 +65,10 @@
 #include <kinetis.h>
 #include <kinetis_uart.h>
 #include <hardware/kinetis_uart.h>
+#include <hardware/kinetis_sim.h>
 #include "board_config.h"
 
-#include "up_arch.h"
+#include "arm_arch.h"
 #include <arch/board/board.h>
 
 #include <drivers/drv_hrt.h>
@@ -83,7 +85,7 @@
  ****************************************************************************/
 
 /*
- * Ideally we'd be able to get these from up_internal.h,
+ * Ideally we'd be able to get these from arm_internal.h,
  * but since we want to be able to disable the NuttX use
  * of leds for system indication at will and there is no
  * separate switch, we need to build independent of the
@@ -118,9 +120,6 @@ void board_on_reset(int status)
 	for (int i = 0; i < 6; ++i) {
 		px4_arch_configgpio(PX4_MAKE_GPIO_INPUT(io_timer_channel_get_as_pwm_input(i)));
 	}
-
-	px4_arch_configgpio(io_timer_channel_get_gpio_output(6)); // Echo trigger pin
-	px4_arch_configgpio(PX4_MAKE_GPIO_INPUT(io_timer_channel_get_as_pwm_input(7)));
 
 	if (status >= 0) {
 		up_mdelay(6);
@@ -164,7 +163,7 @@ __EXPORT void board_peripheral_reset(int ms)
 }
 
 /************************************************************************************
- * Name: stm32_boardinitialize
+ * Name: kinetis_boardinitialize
  *
  * Description:
  *   All Kinetis architectures must provide the following entry point.  This entry point
@@ -236,25 +235,6 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 		syslog(LOG_ERR, "DMA alloc FAILED\n");
 	}
 
-	/* set up the serial DMA polling */
-#ifdef SERIAL_HAVE_DMA
-	static struct hrt_call serial_dma_call;
-	struct timespec ts;
-
-	/*
-	 * Poll at 1ms intervals for received bytes that have not triggered
-	 * a DMA event.
-	 */
-	ts.tv_sec = 0;
-	ts.tv_nsec = 1000000;
-
-	hrt_call_every(&serial_dma_call,
-		       ts_to_abstime(&ts),
-		       ts_to_abstime(&ts),
-		       (hrt_callout)kinetis_serial_dma_poll,
-		       NULL);
-#endif
-
 	/* initial LED state */
 	drv_led_start();
 	led_off(LED_RED);
@@ -285,6 +265,26 @@ __EXPORT int board_app_initialize(uintptr_t arg)
 	}
 
 #endif
+
+#ifdef CONFIG_NETDEV_LATEINIT
+
+# ifdef CONFIG_KINETIS_ENET
+	kinetis_netinitialize(0);
+# endif
+
+# ifdef CONFIG_KINETIS_FLEXCAN0
+	kinetis_caninitialize(0);
+# endif
+
+# ifdef CONFIG_KINETIS_FLEXCAN1
+	kinetis_caninitialize(1);
+# endif
+
+#endif
+
+	/* Configure the HW based on the manifest */
+
+	px4_platform_configure();
 
 	return OK;
 }
